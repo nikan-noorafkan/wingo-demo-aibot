@@ -103,7 +103,7 @@ export function useChatWebhook() {
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'text/plain'
           },
           body: JSON.stringify(payload)
         });
@@ -112,7 +112,12 @@ export function useChatWebhook() {
         let data: unknown;
 
         if (contentType.includes('application/json')) {
-          data = await response.json();
+          try {
+            data = await response.json();
+          } catch (jsonParseError) {
+            console.warn('[Support AI Demo] Failed to parse JSON response, falling back to text', jsonParseError);
+            data = await response.text();
+          }
         } else {
           data = await response.text();
         }
@@ -125,7 +130,8 @@ export function useChatWebhook() {
         setLastResponse(data);
         console.log('[Support AI Demo] Webhook success', data);
 
-        return { reply: parseWebhookResponse(data), raw: data };
+        const normalized = { reply: parseWebhookResponse(data), raw: data };
+        return normalized;
       } catch (err) {
         const message =
           err instanceof TypeError
