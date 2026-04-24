@@ -63,12 +63,21 @@ export function useChatWebhook() {
       const message = text.trim();
       if (!message) return null;
 
+      const activeSessionId =
+        sessionId ||
+        (() => {
+          const id = createId();
+          localStorage.setItem(SESSION_STORAGE_KEY, id);
+          setSessionId(id);
+          return id;
+        })();
+
       setError(null);
       setIsLoading(true);
       setLastUserMessage(message);
 
       const payload: ChatRequestPayload = {
-        sessionId,
+        sessionId: activeSessionId,
         message,
         history: history.map(({ role, content }) => ({ role, content })),
         metadata: {
@@ -118,7 +127,12 @@ export function useChatWebhook() {
 
         return { reply: parseWebhookResponse(data), raw: data };
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unexpected webhook error.';
+        const message =
+          err instanceof TypeError
+            ? 'Failed to fetch webhook. Check URL, CORS, network access, and whether the n8n workflow is active.'
+            : err instanceof Error
+              ? err.message
+              : 'Unexpected webhook error.';
         setError(message);
         console.error('[Support AI Demo] Failed to call webhook', err);
         return null;
