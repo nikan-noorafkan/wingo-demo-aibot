@@ -2,7 +2,7 @@
 
 A production-ready **Next.js + TypeScript + Tailwind CSS** chatbot UI for testing support-agent flows via an **n8n webhook**.
 
-The frontend sends chat messages to `NEXT_PUBLIC_CHAT_WEBHOOK_URL` and renders the webhook response (JSON or plain text). It does **not** call OpenAI directly.
+The frontend sends chat messages to a local Next.js API route (`/api/chat`), and that server route forwards requests to n8n via `CHAT_WEBHOOK_URL`. This avoids direct browser→n8n CORS issues.
 
 ## Project overview
 
@@ -11,8 +11,16 @@ The frontend sends chat messages to `NEXT_PUBLIC_CHAT_WEBHOOK_URL` and renders t
 - Stable browser `sessionId` persisted in `localStorage`
 - Local chat history sent with each webhook request
 - Settings modal to override webhook URL during testing
-- Automatic **mock mode** fallback when webhook URL is missing
+- Automatic **mock mode** fallback when `CHAT_WEBHOOK_URL` is missing
 - Debug panel (optional) showing last request payload and last response
+
+## Local architecture
+
+```text
+Browser UI  ->  Next.js API route (/api/chat)  ->  n8n webhook
+```
+
+This proxy architecture keeps webhook credentials/config server-side and prevents common local CORS failures.
 
 ## Local setup
 
@@ -33,13 +41,13 @@ cp .env.example .env.local
 Then set your webhook URL in `.env.local`:
 
 ```env
-NEXT_PUBLIC_CHAT_WEBHOOK_URL=https://your-n8n-domain.com/webhook/support-ai-demo
+CHAT_WEBHOOK_URL=https://your-n8n-domain.com/webhook/support-ai-demo
 ```
 
 Production webhook example:
 
 ```env
-NEXT_PUBLIC_CHAT_WEBHOOK_URL=https://nikan-n8n-f57748e24e-performance.apps.ir-central1.arvancaas.ir/webhook/support-ai-demo
+CHAT_WEBHOOK_URL=https://nikan-n8n-f57748e24e-performance.apps.ir-central1.arvancaas.ir/webhook/support-ai-demo
 ```
 
 ### 3) Run the app
@@ -91,8 +99,8 @@ The UI supports:
 
 ### Failed to fetch
 
-- Confirm the URL in `.env.local` or Settings override is correct
-- Confirm webhook endpoint is reachable from your browser/network
+- Confirm `CHAT_WEBHOOK_URL` is set in `.env.local`
+- Confirm webhook endpoint is reachable from your Next.js server/network
 - Check browser devtools for CORS or blocked network errors
 
 ### `webhook-test` vs `webhook`
@@ -107,21 +115,20 @@ The UI supports:
 
 ### CORS/network issues
 
-- Ensure your n8n instance allows requests from your frontend origin
+- Direct browser calls to n8n are avoided by default via `/api/chat` proxy
+- Ensure your n8n instance is reachable from the Next.js runtime environment
 - Check reverse proxy, firewall, TLS certificate, and DNS issues
-- The frontend intentionally sends webhook requests as `Content-Type: text/plain` to reduce browser CORS preflight issues with n8n webhooks
-- If your n8n workflow needs structured JSON fields, parse the raw request body inside n8n with `JSON.parse(...)`
 
 ### Missing webhook URL / mock mode
 
-- If no webhook is configured, UI enters mock mode automatically
+- If `CHAT_WEBHOOK_URL` is not configured, `/api/chat` returns a mock reply automatically
 - This is expected and helps validate UI behavior before backend connectivity
 
 ## Deployment (Vercel)
 
 1. Import the GitHub repository into Vercel
 2. In Project Settings → Environment Variables, set:
-   - `NEXT_PUBLIC_CHAT_WEBHOOK_URL=<your production n8n webhook>`
+   - `CHAT_WEBHOOK_URL=<your production n8n webhook>`
 3. Deploy
 
 ## Scripts

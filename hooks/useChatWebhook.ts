@@ -92,18 +92,12 @@ export function useChatWebhook() {
       console.log('[Support AI Demo] Sending webhook request', payload); // n8n webhook call payload log
 
       try {
-        // n8n webhook is called here (or mock fallback if no URL is configured)
-        if (!webhookUrl) {
-          await new Promise((resolve) => setTimeout(resolve, 700));
-          const mock = { reply: `Mock mode reply: you said \"${message}\".` };
-          setLastResponse(mock);
-          return { reply: parseWebhookResponse(mock), raw: mock };
-        }
-
-        const response = await fetch(webhookUrl, {
+        // Browser calls local Next.js API proxy (/api/chat), which then calls n8n server-side.
+        const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
-            'Content-Type': 'text/plain'
+            'Content-Type': 'application/json',
+            ...(webhookOverride.trim() ? { 'x-chat-webhook-override': webhookOverride.trim() } : {})
           },
           body: JSON.stringify(payload)
         });
@@ -121,7 +115,11 @@ export function useChatWebhook() {
 
         if (!response.ok) {
           console.error('[Support AI Demo] Webhook error response', response.status, data);
-          throw new Error(`Webhook returned ${response.status}.`);
+          const details =
+            data && typeof data === 'object' && 'error' in data
+              ? String((data as Record<string, unknown>).error)
+              : `Webhook returned ${response.status}.`;
+          throw new Error(details);
         }
 
         setLastResponse(data);

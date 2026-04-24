@@ -29,9 +29,8 @@ export function ChatPage() {
   } = useChatWebhook();
 
   const envWebhookUrl = process.env.NEXT_PUBLIC_CHAT_WEBHOOK_URL?.trim() || '';
-  const missingWebhook = !webhookUrl;
-
-  const statusText = useMemo(() => (missingWebhook ? 'Demo mode (mock replies)' : 'Demo mode'), [missingWebhook]);
+  const missingPublicWebhook = !webhookUrl;
+  const statusText = useMemo(() => 'Demo mode', []);
 
   const pushAssistantMessage = (content: string) => {
     setMessages((prev) => [
@@ -98,9 +97,9 @@ export function ChatPage() {
           </div>
         </div>
 
-        {missingWebhook && (
+        {missingPublicWebhook && (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-            NEXT_PUBLIC_CHAT_WEBHOOK_URL is not configured. You can still test UI behavior in mock mode or set a URL in Settings.
+            No public override is configured. Requests are sent through <code>/api/chat</code>, which can use server-side <code>CHAT_WEBHOOK_URL</code> or return mock replies.
           </div>
         )}
 
