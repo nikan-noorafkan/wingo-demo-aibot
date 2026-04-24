@@ -108,18 +108,15 @@ export function useChatWebhook() {
           body: JSON.stringify(payload)
         });
 
-        const contentType = response.headers.get('content-type') || '';
-        let data: unknown;
+        const rawText = await response.text();
+        let data: unknown = rawText;
 
-        if (contentType.includes('application/json')) {
+        if (rawText.trim()) {
           try {
-            data = await response.json();
-          } catch (jsonParseError) {
-            console.warn('[Support AI Demo] Failed to parse JSON response, falling back to text', jsonParseError);
-            data = await response.text();
+            data = JSON.parse(rawText);
+          } catch {
+            data = rawText;
           }
-        } else {
-          data = await response.text();
         }
 
         if (!response.ok) {

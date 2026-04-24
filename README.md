@@ -109,6 +109,8 @@ The UI supports:
 
 - Ensure your n8n instance allows requests from your frontend origin
 - Check reverse proxy, firewall, TLS certificate, and DNS issues
+- The frontend intentionally sends webhook requests as `Content-Type: text/plain` to reduce browser CORS preflight issues with n8n webhooks
+- If your n8n workflow needs structured JSON fields, parse the raw request body inside n8n with `JSON.parse(...)`
 
 ### Missing webhook URL / mock mode
 
